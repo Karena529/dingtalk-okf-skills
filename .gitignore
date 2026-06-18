@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.mypy_cache/
+.ruff_cache/
+
+# Editor
+.vscode/
+.idea/
+.DS_Store
+
+# Logs / scratch
+*.log
+*.tmp
+/tmp_*
+.scratch/
+
+# Skill 工作目录（跑出来的中间产物，不应入库）
+kb_build/
+build/
+**/source_node_index.json
+**/okf_node_index.json
+**/folder_idx.json
+**/upload_list.tsv
+**/converted/
+
+# 凭证 / token
+.env
+.env.*
+*.token
+secrets/
