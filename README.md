@@ -13,7 +13,7 @@
 | Skill | 状态 | 作用 |
 |---|---|---|
 | [`dingtalk-okf-kb`](./dingtalk-okf-kb/) | ✅ v0.1 | **建库**：把本地 PRD 整理成 OKF 卡片体系 + 上传到钉钉知识库 |
-| `dingtalk-okf-query` | 🚧 规划中 | **调用**：外部 Agent 标准检索流程（manifest → OKF 卡 → 原文 → 答案） |
+| [`dingtalk-okf-query`](./dingtalk-okf-query/) | ✅ v0.1 | **调用**：外部 Agent 标准检索流程（manifest → OKF 卡 → 原文 → 答案） |
 | `dingtalk-okf-maintain` | 🚧 规划中 | **维护**：新 PRD 增量更新、定期复核、`verified_at` 过期通知 |
 | `dingtalk-okf-eval` | 🚧 规划中 | **评测**：跑命中率 / 过期事实误用率 / 检索成本指标 |
 
@@ -58,8 +58,9 @@ ls -la ~/.claude/skills/ | grep dingtalk
 
 下次 Claude 会话里说"把这些 PRD 整理成 OKF 进钉钉"，应当自动触发 `dingtalk-okf-kb` skill。
 
-## 当前能力（dingtalk-okf-kb v0.1）
+## 当前能力（dingtalk-okf-kb v0.1 + dingtalk-okf-query v0.1）
 
+### 建库（dingtalk-okf-kb）
 - 自动扫描本地源目录，提取 markdown / docx / txt
 - pandoc 自动转 docx → markdown
 - 在钉钉知识库下建立 9 层 OKF 目录骨架（00_MANIFEST … 08_SOURCE）
@@ -70,12 +71,23 @@ ls -la ~/.claude/skills/ | grep dingtalk
 - 生成 6 份 manifest（按类型）+ 2 份 index（按产品 / 按原文）
 - 全流程**幂等**：失败重跑只补缺，不重复
 
+### 调用（dingtalk-okf-query）
+- 加载 manifest 到本地缓存（默认 1 小时 TTL）
+- 按关键词在 `id / title / aliases / summary / modules / products` 做加权匹配，返回 Top-K 候选
+- 读 OKF 卡片：自动反转义钉钉 markdown、解析 frontmatter、检测 status / verified_at / effective_from 给出 hints
+- 读 sources 引用的原文（按 authority 优先，max-chars 截断）
+- 内置避坑指南：12 类常见检索陷阱（superseded 误用、关键词太窄、知识盲区时编造等）+ 标准回答格式
+
 ## 实测数据（首次跑通的 PoC）
 
+**建库**（dingtalk-okf-kb）：
 - 输入：3 个本地源目录、共 ~60 份候选文档
 - 输出：33 份原文上传 + 76 张 OKF 卡片 + 10 份 docx 附件 + 8 份 manifest/index
-- 评测：钉钉原生搜索 Top-1 仅 33%；先读 manifest 路径 Top-1 83%（盲评 Agent，自抽关键词）
-- 关键发现：`status` 字段成功隔离 superseded 内容 → 过期事实误用率 0%
+
+**调用**（dingtalk-okf-query）：
+- 6 个真实问题盲评：Top-1 命中率 83% / Top-3 100% / 过期事实误用率 0%
+- 单问题 CLI 调用 2-3 次（manifest 缓存命中后），耗时 < 5 秒
+- 关键论断：钉钉原生搜索 Top-1 仅 33%，必须强制走 manifest 路径
 
 ## 设计原则
 
